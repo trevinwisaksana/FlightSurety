@@ -32,6 +32,7 @@ web3.eth.getAccounts().then(accounts => {
         })
     }
 
+    // The server is also used to register the flights. Ideally there will be a seperate server from the Oracle's.
     flightSuretyApp.methods.fund(accounts[0]).send({from: accounts[0], value: web3.utils.toWei("10",'ether'), gas: 3000000})
     .catch((error) => console.log(`Failed to register airline: ${error}`))
     .then((result) => {
