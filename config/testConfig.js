@@ -14,6 +14,7 @@ var Config = async function(accounts) {
     let passenger = accounts[6];
     let sku = 1;
     let flightNumber = "ND1309";
+    let secondFlightNumber = "ND1310"
 
     let flightSuretyData = await FlightSuretyData.new(firstAirline);
     let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address);
@@ -27,6 +28,7 @@ var Config = async function(accounts) {
         fifthAirline: fifthAirline,
         sku: sku,
         flightNumber: flightNumber,
+        secondFlightNumber: secondFlightNumber,
         passenger: passenger,
         weiMultiple: (new BigNumber(10)).pow(18),
         flightSuretyData: flightSuretyData,

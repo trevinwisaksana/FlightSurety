@@ -40,6 +40,13 @@ export default class Contract {
             .call({ from: self.owner}, callback);
     }
 
+    getFlightNumbers(callback) {
+       let self = this;
+       self.flightSuretyApp.methods
+            .getFlightNumbers()
+            .call({from: self.owner}, callback);
+    }
+
     fetchFlightStatus(flight, callback) {
         let self = this;
         let payload = {
@@ -56,14 +63,17 @@ export default class Contract {
 
     buyFlightInsurance(flight, callback) {
         let self = this;
+        // The airline is hard coded for the moment to simplfy the project
         let payload = {
             airline: self.airlines[0],
             flight: flight
         }
         self.flightSuretyApp.methods
             .buy(payload.airline, payload.flight)
-            .send({from: self.owner}, (error, result) => {
+            // The value of the insurance is hardcoded here but can be improved
+            .send({from: self.owner, value: this.web3.utils.toWei("1", "ether"), gas: 3000000}, (error, result) => {
                 callback(error, payload);
         });
     }
+
 }

@@ -1,4 +1,5 @@
 import FlightSuretyApp from '../../build/contracts/FlightSuretyApp.json';
+import FlightSuretyData from '../../build/contracts/FlightSuretyData.json';
 import Config from './config.json';
 import Web3 from 'web3';
 import express from 'express';
@@ -7,6 +8,7 @@ let config = Config['localhost'];
 let web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws')));
 web3.eth.defaultAccount = web3.eth.accounts[0];
 let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
+let flightSuretyData = new web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
 
 const maximumNumberOfOracles = 20;
 const numberOfFlights = 20;
@@ -30,16 +32,29 @@ web3.eth.getAccounts().then(accounts => {
         })
     }
 
-    for(let a = 0; a < numberOfFlights; a++) {
-        const flightNumber = "NS" + (Math.floor(Math.random() * (1000 - 100) + 100)).toString();
-        let timestamp = Math.floor(Date.now() / 1000);
-
-        flightSuretyApp.methods.registerFlight(accounts[0], flightNumber, timestamp).call({from: accounts[0], gas: 3000000})
-        .catch((error) => console.log(`Failed to register flight: ${error}`))
+    flightSuretyApp.methods.fund(accounts[0]).send({from: accounts[0], value: web3.utils.toWei("10",'ether'), gas: 3000000})
+    .catch((error) => console.log(`Failed to register airline: ${error}`))
+    .then((result) => {
+        flightSuretyApp.methods.registerAirline(accounts[0]).send({from: accounts[0], gas: 3000000})
+        .catch((error) => console.log(`Failed to register airline: ${error}`))
         .then((result) => {
+            for(let a = 0; a < numberOfFlights; a++) {
+                const flightNumber = (Math.floor(Math.random() * (1000 - 100) + 100)).toString();
+                // Flight number is added to make the timestamp always different
+                let timestamp = Math.floor(Date.now() / 1000) + flightNumber;
 
+                flightSuretyApp.methods.registerFlight(accounts[0], "NS" + flightNumber, timestamp).send({from: accounts[0], gas: 3000000})
+                .catch((error) => console.log(`Failed to register flight: ${error}`))
+                .then((result) => {
+                    flightSuretyApp.methods.getFlightNumbers().call()
+                    .catch((error) => console.log(`Failed to get flight numbers: ${error}`))
+                    .then((flightNumbers) => {
+                        console.log("Flight numbers: ", flightNumbers);
+                    })
+                })
+            }
         })
-    }
+    })
 });
 
 flightSuretyApp.events.OracleRequest({fromBlock: 0}, function (error, event) {

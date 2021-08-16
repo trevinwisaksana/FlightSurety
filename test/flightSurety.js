@@ -120,7 +120,7 @@ contract('Flight Surety Tests', async (accounts) => {
         assert.equal(isThirdAirlineRegistered, true, "Airline should be able to register another airline if it has provided funding");
     });
 
-    it('(airline) requires a conensus of 50% to register a flight once there is more than 3 airlines registered', async () => {
+    it('(airline) requires a conensus of 50% to register a airline once there is more than 3 airlines registered', async () => {
         await config.flightSuretyApp.registerAirline(config.fourthAirline, {from: config.firstAirline});
         await config.flightSuretyApp.registerAirline(config.fifthAirline, {from: config.firstAirline});
 
@@ -130,6 +130,14 @@ contract('Flight Surety Tests', async (accounts) => {
         await config.flightSuretyApp.registerAirline(config.fifthAirline, {from: config.secondAirline});
         let result = await config.flightSuretyData.isAirline(config.fifthAirline);
         assert.equal(result, true, "Fifth airline should be registered");
+    });
+
+    it('(passenger) gets the flight numbers of the flights registered', async () => {
+        let timestamp = Math.floor(Date.now() / 1000);
+        await config.flightSuretyApp.registerFlight(config.firstAirline, config.secondFlightNumber, timestamp);
+
+        let flightNumbers = await config.flightSuretyApp.getFlightNumbers.call();
+        assert.equal(flightNumbers.length, 2, "Number of flights should be 2");
     });
 
     it('(passenger) buys flight insurance with 1 eth', async () => {

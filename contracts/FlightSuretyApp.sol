@@ -1,4 +1,5 @@
 pragma solidity ^0.4.25;
+pragma experimental ABIEncoderV2;
 
 // It's important to avoid vulnerabilities due to numeric overflow bugs
 // OpenZeppelin's SafeMath library, when used correctly, protects agains such bugs
@@ -176,11 +177,11 @@ contract FlightSuretyApp {
      * @dev Gets the flight numbers
      *
      */
-    function getFlightNumbers() external
+    function getFlightNumbers() external view
         requireIsOperational
         returns(string[])
     {
-
+        return flightSuretyData.getFlightNumbers();
     }
 
     // Generate a request for oracles to fetch flight information

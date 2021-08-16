@@ -1,10 +1,12 @@
 pragma solidity ^0.4.25;
+pragma experimental ABIEncoderV2;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 interface IFlightSuretyData {
     function registerAirline(address airline) external;
-    function numberOfAirlines() returns(uint);
+    function numberOfAirlines() external view returns(uint);
+    function getFlightNumbers() external view returns(string[]);
     function isOperational() view external returns(bool);
     function registerFlight(address airline, string flight, uint256 timestamp) external;
     function fund(address airline) public payable;
@@ -55,11 +57,10 @@ contract FlightSuretyData is IFlightSuretyData {
     address private contractOwner; // Account used to deploy contract
     bool private operational = true; // Blocks all state changes throughout the contract if false
 
-    uint flightSKU = 1; // Sku stands for Stock Keeping Unit
-    uint airlineSKU = 1; // Sku stands for Stock Keeping Unit
+    uint private flightSKU = 1; // Sku stands for Stock Keeping Unit
+    uint private airlineSKU = 1; // Sku stands for Stock Keeping Unit
     uint private insurancePrice = 1 ether; // The price of the flight insurance
-    uint private insurancePrice = 1 ether; // The price of the flight insurance
-    string[] flightNumbers; // Lists all the flight numbers so it can be displayed
+    string[] private flightNumbers; // Lists all the flight numbers so it can be displayed
 
     // Track all registered airlines
     mapping(address => Airline) private airlines;
@@ -67,8 +68,6 @@ contract FlightSuretyData is IFlightSuretyData {
     mapping(bytes32 => Flight) private flights;
     // Track all the existing insurance
     mapping(uint => FlightInsurance) private insurances;
-    // References the flight number with the flight insurance
-    mapping(string => uint) private flightNumberToFlightSKU;
     // Keeps track of how much credit each passenger can withdraw
     mapping(address => uint256) private passengerCredits;
     // Keeps track of the airline registered to vote
@@ -121,8 +120,8 @@ contract FlightSuretyData is IFlightSuretyData {
     /**
     * @dev Modifier that requires the "ContractOwner" account to be the function caller
     */
-    modifier requireAnAirline() {
-        require(airlines[msg.sender].isRegistered == true, "Airline must be registered");
+    modifier requireAnAirline(address airline) {
+        require(airlines[airline].isRegistered == true, "Airline must be registered");
         _;
     }
 
@@ -179,7 +178,7 @@ contract FlightSuretyData is IFlightSuretyData {
     * @dev Returns the number of airlines that are registered
     *
     */
-    function numberOfAirlines()
+    function numberOfAirlines() external view
         requireIsOperational
         returns(uint)
     {
@@ -220,13 +219,13 @@ contract FlightSuretyData is IFlightSuretyData {
     *
     */
     function registerFlight(address airline, string flight, uint256 timestamp) external
-        requireIsOperational
+        requireIsOperational requireAnAirline(airline)
     {
         bytes32 flightKey = getFlightKey(airline, flight, timestamp);
 
         flights[flightKey] = Flight(true, 0, flightSKU, timestamp, airline);
         airlines[airline].flightSKUs[flight] = flightSKU;
-        flightNumberToFlightSKU[flight] = flightSKU;
+        flightNumbers.push(flight);
 
         _createFlightInsurance(airline, flight);
     }
@@ -235,11 +234,22 @@ contract FlightSuretyData is IFlightSuretyData {
     * @dev Returns the flight numbers of the flights registered
     *
     */
-    function getFlightNumbers()
+    function getFlightNumbers() external view
         requireIsOperational
         returns(string[])
     {
-        return flights;
+        return flightNumbers;
+    }
+
+    /**
+    * @dev Returns the number of flights that are registered
+    *
+    */
+    function numberOfFlights() external view
+        requireIsOperational
+        returns(uint)
+    {
+        return flightSKU;
     }
 
     /**
